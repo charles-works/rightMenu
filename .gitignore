@@ -1,0 +1,81 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+
+# Go build artifacts
+*.a
+*.o
+*.test
+*.prof
+*.zip
+*.tar.gz
+
+# Go workspace
+bin/
+pkg/
+
+# Go modules
+go.mod
+go.sum
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Build output
+build/
+dist/
+target/
+
+# Environment specific files
+.env
+.config
+
+# Windows
+Debug/
+Release/
+x64/
+x86/
+build/
+bld/
+*.gch
+*.pch
+
+# Linux/Mac
+_obj/
+_test/
+
+# Powershell
+*.ps1~
+*.psm1~
+*.psd1~
+
+.omx/
+.tools/
+.tmp/
