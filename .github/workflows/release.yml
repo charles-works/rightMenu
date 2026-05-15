@@ -22,8 +22,11 @@ jobs:
 
       - name: Build
         run: |
+          ls -la
+          pwd
           go mod tidy
           go build -ldflags="-s -w" -o bin/rightmenu.exe main.go
+        shell: bash
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
