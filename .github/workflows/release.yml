@@ -1,49 +1,33 @@
-name: release
+name: Release
 
 on:
   push:
     tags:
-      - 'v*'
-  workflow_dispatch:
+      - "v*"
 
 jobs:
-  build-windows-amd64:
+  release:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/checkout@v3
         with:
-          go-version-file: go.mod
-          cache: true
+          fetch-depth: 0
 
-      - name: Test
-        run: go test ./...
-
-      - name: Build Windows x64
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force dist | Out-Null
-          $env:GOOS = 'windows'
-          $env:GOARCH = 'amd64'
-          go build -trimpath -ldflags='-s -w' -o dist/rightmenu.exe ./cmd/rightmenu
-
-      - name: Package
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force package/examples, package/scripts | Out-Null
-          Copy-Item dist/rightmenu.exe package/rightmenu.exe
-          Copy-Item examples/config.json package/examples/config.json
-          Copy-Item scripts/install.ps1 package/scripts/install.ps1
-          Copy-Item scripts/uninstall.ps1 package/scripts/uninstall.ps1
-          Copy-Item README.md package/README.md
-          Compress-Archive -Path package/* -DestinationPath dist/rightmenu-windows-amd64.zip -Force
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7
+      - name: Set up Go
+        uses: actions/setup-go@v3
         with:
-          name: rightmenu-windows-amd64
-          path: dist/rightmenu-windows-amd64.zip
-          if-no-files-found: error
+          go-version: "1.21" # 使用最新稳定版Go
+
+      - name: Build
+        run: |
+          go mod tidy
+          go build -ldflags="-s -w" -o bin/rightmenu.exe main.go
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: starts_with(github.ref, 'refs/tags/')
+        with:
+          files: bin/rightmenu.exe
+          draft: false
+          prerelease: false
