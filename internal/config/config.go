@@ -13,6 +13,7 @@ import (
 const (
 	AppDirName     = "RightMenu"
 	ConfigFileName = "config.json"
+	LogFileName    = "rightmenu.log"
 	PinnedExeName  = "rightmenu.exe"
 	FileToken      = "{file}"
 )
@@ -21,8 +22,15 @@ var itemIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
 // Config is the user-editable menu configuration.
 type Config struct {
-	MenuTitle string `json:"menuTitle"`
-	Items     []Item `json:"items"`
+	MenuTitle string  `json:"menuTitle"`
+	Logging   Logging `json:"logging,omitempty"`
+	Items     []Item  `json:"items"`
+}
+
+// Logging contains global run logging options.
+type Logging struct {
+	Enabled *bool  `json:"enabled,omitempty"`
+	Path    string `json:"path,omitempty"`
 }
 
 // Item describes one DEV调试 submenu command.
@@ -37,6 +45,7 @@ type Item struct {
 // Paths contains canonical v1 filesystem locations.
 type Paths struct {
 	ConfigPath string
+	LogPath    string
 	InstallDir string
 	PinnedExe  string
 }
@@ -53,6 +62,7 @@ func DefaultPaths() (Paths, error) {
 	installDir := filepath.Join(localAppData, AppDirName)
 	return Paths{
 		ConfigPath: filepath.Join(appData, AppDirName, ConfigFileName),
+		LogPath:    filepath.Join(appData, AppDirName, LogFileName),
 		InstallDir: installDir,
 		PinnedExe:  filepath.Join(installDir, PinnedExeName),
 	}, nil
@@ -87,8 +97,12 @@ func userLocalBase() (string, error) {
 }
 
 func DefaultConfig() Config {
+	loggingEnabled := true
 	return Config{
 		MenuTitle: "DEV调试",
+		Logging: Logging{
+			Enabled: &loggingEnabled,
+		},
 		Items: []Item{{
 			ID:              "aa",
 			Title:           "AA",
@@ -131,6 +145,17 @@ func Ensure(path string) error {
 		return fmt.Errorf("write sample config %q: %w", path, err)
 	}
 	return nil
+}
+
+func (c Config) LoggingEnabled() bool {
+	return c.Logging.Enabled == nil || *c.Logging.Enabled
+}
+
+func (c Config) LogPath(defaultPath string) string {
+	if strings.TrimSpace(c.Logging.Path) != "" {
+		return c.Logging.Path
+	}
+	return defaultPath
 }
 
 func (c Config) Validate() error {

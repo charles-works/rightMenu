@@ -1,5 +1,9 @@
 {
   "menuTitle": "DEV调试",
+  "logging": {
+    "enabled": true,
+    "path": ""
+  },
   "items": [
     {
       "id": "aa",

@@ -41,6 +41,7 @@ Extract the zip to a stable directory before installing.
 
 - Pinned executable: `%LOCALAPPDATA%\RightMenu\rightmenu.exe`
 - Config file: `%APPDATA%\RightMenu\config.json`
+- Log file: `%APPDATA%\RightMenu\rightmenu.log` by default
 - Registry menu subtree: `HKCU\Software\Classes\*\shell\DEVDebug`
 
 Moving the original extracted zip directory after install is okay because Explorer commands use the pinned executable path.
@@ -52,6 +53,10 @@ Edit `%APPDATA%\RightMenu\config.json`:
 ```json
 {
   "menuTitle": "DEV调试",
+  "logging": {
+    "enabled": true,
+    "path": ""
+  },
   "items": [
     {
       "id": "aa",
@@ -65,6 +70,10 @@ Edit `%APPDATA%\RightMenu\config.json`:
 
 Rules:
 
+- `logging` is a global optional object:
+  - `enabled` defaults to `true`; set it to `false` to disable run logging.
+  - `path` is optional. Empty or omitted uses `%APPDATA%\RightMenu\rightmenu.log`.
+  - Each run appends one JSON line containing the run time, selected file path, selected filename, target program, argument array, and formatted full command.
 - `id` must be unique and match `^[A-Za-z0-9._-]+$`.
 - `title` is shown in the submenu.
 - `program` is the target executable path.
@@ -78,6 +87,47 @@ Rules:
   6. `"Q"`
 - If `args` is present, it replaces the default six-argument contract for compatibility.
 - In custom `args`, `{file}` expands to the selected full file path.
+
+### Log example
+
+With default logging enabled, each `run` appends one JSON line to `%APPDATA%\RightMenu\rightmenu.log` unless `logging.path` overrides it:
+
+```json
+{"time":"2026-05-15T01:02:03Z","selectedFile":"C:\\Temp\\path with spaces\\file.txt","selectedFileName":"file.txt","program":"C:\\Tools\\AA.exe","args":[" ","IF_A_000N","C:\\DEV","C:\\Temp\\path with spaces","file.txt","Q"],"command":"\"C:\\Tools\\AA.exe\" \" \" IF_A_000N C:\\DEV \"C:\\Temp\\path with spaces\" file.txt Q"}
+```
+
+Use a custom log path or disable logging globally:
+
+```json
+{
+  "logging": {
+    "enabled": true,
+    "path": "C:\\Logs\\rightmenu.log"
+  }
+}
+```
+
+### Custom args example
+
+If a target program needs the old/simple selected-file argument, set `args` explicitly. This bypasses the default six-argument contract for that item:
+
+```json
+{
+  "id": "aa-legacy",
+  "title": "AA Legacy",
+  "program": "C:\\Tools\\AA.exe",
+  "args": ["--open", "{file}", "--mode", "debug"]
+}
+```
+
+For selected file `C:\Temp\path with spaces\file.txt`, the target receives:
+
+```text
+--open
+C:\Temp\path with spaces\file.txt
+--mode
+debug
+```
 
 After editing config, run:
 

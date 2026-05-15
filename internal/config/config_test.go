@@ -34,8 +34,29 @@ func TestEnsureLoadAndDefaults(t *testing.T) {
 	if cfg.MenuTitle != "DEV调试" || len(cfg.Items) != 1 || cfg.Items[0].ID != "aa" {
 		t.Fatalf("unexpected cfg: %+v", cfg)
 	}
+	if !cfg.LoggingEnabled() {
+		t.Fatalf("default logging should be enabled")
+	}
 	if _, err := os.Stat(path); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestLoggingConfigDefaultsAndOverrides(t *testing.T) {
+	cfg := Config{}
+	if !cfg.LoggingEnabled() {
+		t.Fatal("zero-value logging should be enabled")
+	}
+	if got := cfg.LogPath("default.log"); got != "default.log" {
+		t.Fatalf("default log path = %q", got)
+	}
+	disabled := false
+	cfg.Logging = Logging{Enabled: &disabled, Path: `C:\Logs\rightmenu.log`}
+	if cfg.LoggingEnabled() {
+		t.Fatal("logging should be disabled")
+	}
+	if got := cfg.LogPath("default.log"); got != `C:\Logs\rightmenu.log` {
+		t.Fatalf("configured log path = %q", got)
 	}
 }
 

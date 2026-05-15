@@ -1,9 +1,13 @@
 package runner
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"rightmenu/internal/config"
 )
@@ -55,6 +59,38 @@ func TestRunUsesStarterWithoutShellConcatenation(t *testing.T) {
 	}
 	if starter.program != "tool" || !reflect.DeepEqual(starter.args, []string{file}) {
 		t.Fatalf("recorded %#v %#v", starter.program, starter.args)
+	}
+}
+
+func TestRunWithLoggerRecordsSelectedFileCommandAndArgs(t *testing.T) {
+	cfg := config.Config{MenuTitle: "DEV调试", Items: []config.Item{{ID: "aa", Title: "AA", Program: `C:\Tools\AA.exe`, SpecifiedFolder: `C:\Target Dir`}}}
+	starter := &recordingStarter{}
+	logPath := filepath.Join(t.TempDir(), "logs", "rightmenu.log")
+	file := `C:\Temp\path with spaces\file.txt`
+	logger := FileLogger{
+		Path: logPath,
+		Now: func() time.Time {
+			return time.Date(2026, 5, 15, 1, 2, 3, 0, time.UTC)
+		},
+	}
+	if err := RunWithLogger(cfg, "aa", file, starter, logger); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entry LogEntry
+	if err := json.Unmarshal(b, &entry); err != nil {
+		t.Fatalf("parse log %q: %v", string(b), err)
+	}
+	wantArgs := []string{" ", "IF_A_000N", `C:\Target Dir`, `C:\Temp\path with spaces`, "file.txt", "Q"}
+	if entry.Time != "2026-05-15T01:02:03Z" || entry.SelectedFile != file || entry.SelectedFileName != "file.txt" || entry.Program != `C:\Tools\AA.exe` || !reflect.DeepEqual(entry.Args, wantArgs) {
+		t.Fatalf("unexpected log entry: %+v", entry)
+	}
+	wantCommand := `"C:\Tools\AA.exe" " " IF_A_000N "C:\Target Dir" "C:\Temp\path with spaces" file.txt Q`
+	if entry.Command != wantCommand {
+		t.Fatalf("command = %q want %q", entry.Command, wantCommand)
 	}
 }
 

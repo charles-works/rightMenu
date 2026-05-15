@@ -43,14 +43,18 @@ func run(args []string, stdout io.Writer) error {
 		if err != nil {
 			return err
 		}
-		return runner.Run(cfg, args[1], args[2], nil)
+		var logger runner.RunLogger
+		if cfg.LoggingEnabled() {
+			logger = runner.FileLogger{Path: cfg.LogPath(paths.LogPath)}
+		}
+		return runner.RunWithLogger(cfg, args[1], args[2], nil, logger)
 	case "config":
 		if err := config.Ensure(paths.ConfigPath); err != nil {
 			return err
 		}
 		return openPath(paths.ConfigPath)
 	case "paths":
-		fmt.Fprintf(stdout, "config: %s\ninstallDir: %s\npinnedExe: %s\n", paths.ConfigPath, paths.InstallDir, paths.PinnedExe)
+		fmt.Fprintf(stdout, "config: %s\nlog: %s\ninstallDir: %s\npinnedExe: %s\n", paths.ConfigPath, paths.LogPath, paths.InstallDir, paths.PinnedExe)
 		return nil
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
