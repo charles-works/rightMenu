@@ -24,6 +24,11 @@ jobs:
         run: |
           ls -la
           pwd
+          # 检查go.mod是否存在
+          if [ ! -f "go.mod" ]; then
+            echo "Error: go.mod not found in $(pwd)"
+            exit 1
+          fi
           go mod tidy
           go build -ldflags="-s -w" -o bin/rightmenu.exe main.go
         shell: bash

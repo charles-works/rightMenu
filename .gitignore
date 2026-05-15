@@ -18,7 +18,7 @@ bin/
 pkg/
 
 # Go modules
-go.mod
+# go.mod
 go.sum
 
 # IDE specific files
