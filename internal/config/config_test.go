@@ -48,3 +48,45 @@ func TestExpandedArgsPreservesSpacesAndUnicode(t *testing.T) {
 		t.Fatalf("default args = %#v", got)
 	}
 }
+
+func TestValidateRejectsRequiredFields(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{
+			name: "missing menu title",
+			cfg:  Config{Items: []Item{{ID: "aa", Title: "AA", Program: "tool.exe"}}},
+			want: "menuTitle",
+		},
+		{
+			name: "missing items",
+			cfg:  Config{MenuTitle: "DEV调试"},
+			want: "at least one item",
+		},
+		{
+			name: "missing item id",
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{Title: "AA", Program: "tool.exe"}}},
+			want: "id is required",
+		},
+		{
+			name: "missing item title",
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Program: "tool.exe"}}},
+			want: "title is required",
+		},
+		{
+			name: "missing item program",
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA"}}},
+			want: "program is required",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("expected %q error, got %v", tc.want, err)
+			}
+		})
+	}
+}

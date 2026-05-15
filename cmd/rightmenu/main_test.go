@@ -7,8 +7,8 @@ import (
 )
 
 func TestHelp(t *testing.T) {
-	var out, errOut bytes.Buffer
-	if err := run([]string{"--help"}, &out, &errOut); err != nil {
+	var out bytes.Buffer
+	if err := run([]string{"--help"}, &out); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "rightmenu install") {
@@ -17,8 +17,8 @@ func TestHelp(t *testing.T) {
 }
 
 func TestUnknownCommand(t *testing.T) {
-	var out, errOut bytes.Buffer
-	if err := run([]string{"bogus"}, &out, &errOut); err == nil || !strings.Contains(err.Error(), "unknown command") {
+	var out bytes.Buffer
+	if err := run([]string{"bogus"}, &out); err == nil || !strings.Contains(err.Error(), "unknown command") {
 		t.Fatalf("expected unknown command error, got %v", err)
 	}
 }

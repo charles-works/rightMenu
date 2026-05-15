@@ -109,10 +109,12 @@ HKCU\Software\Classes\*\shell\DEVDebug
     Shell
       <item-id>
         MUIVerb = <configured title>
-        command\(Default) = "%LOCALAPPDATA%\RightMenu\rightmenu.exe" run "<item-id>" "%1"
+        command
+          (Default) = "%LOCALAPPDATA%\RightMenu\rightmenu.exe" run "<item-id>" "%1"
       settings
         MUIVerb = 设置
-        command\(Default) = "%LOCALAPPDATA%\RightMenu\rightmenu.exe" config
+        command
+          (Default) = "%LOCALAPPDATA%\RightMenu\rightmenu.exe" config
 ```
 
 Uninstall removes only `HKCU\Software\Classes\*\shell\DEVDebug`; it leaves your config file in place.

@@ -1,42 +1,55 @@
-name: Release
+name: release
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  release:
+  build-windows-amd64:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v6
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - name: Setup Go
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.21" # 使用最新稳定版Go
+          go-version-file: go.mod
+          cache: true
 
-      - name: Build
+      - name: Test
+        shell: pwsh
+        run: go test ./...
+
+      - name: Build Windows x64
+        shell: pwsh
         run: |
-          ls -la
-          pwd
-          # 检查go.mod是否存在
-          if [ ! -f "go.mod" ]; then
-            echo "Error: go.mod not found in $(pwd)"
-            exit 1
-          fi
-          go mod tidy
-          go build -ldflags="-s -w" -o bin/rightmenu.exe main.go
-        shell: bash
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $env:GOOS = 'windows'
+          $env:GOARCH = 'amd64'
+          go build -trimpath -ldflags='-s -w' -o dist/rightmenu.exe ./cmd/rightmenu
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Package
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $env:RUNNER_TEMP 'rightmenu-package'
+          Remove-Item -Recurse -Force $packageRoot -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force "$packageRoot/examples", "$packageRoot/scripts" | Out-Null
+          Copy-Item dist/rightmenu.exe "$packageRoot/rightmenu.exe"
+          Copy-Item examples/config.json "$packageRoot/examples/config.json"
+          Copy-Item scripts/install.ps1 "$packageRoot/scripts/install.ps1"
+          Copy-Item scripts/uninstall.ps1 "$packageRoot/scripts/uninstall.ps1"
+          Copy-Item README.md "$packageRoot/README.md"
+          Compress-Archive -Path "$packageRoot/*" -DestinationPath dist/rightmenu-windows-amd64.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
         with:
-          files: bin/rightmenu.exe
-          draft: false
-          prerelease: false
+          name: rightmenu-windows-amd64
+          path: dist/rightmenu-windows-amd64.zip
+          if-no-files-found: error
