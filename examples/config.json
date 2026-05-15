@@ -5,7 +5,7 @@
       "id": "aa",
       "title": "AA",
       "program": "C:\\Tools\\AA.exe",
-      "args": ["{file}"]
+      "specifiedFolder": "C:\\DEV"
     }
   ]
 }

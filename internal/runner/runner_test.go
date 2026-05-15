@@ -20,7 +20,7 @@ func (r *recordingStarter) Start(program string, args []string) error {
 }
 
 func TestBuildInvocation(t *testing.T) {
-	cfg := config.Config{MenuTitle: "DEV调试", Items: []config.Item{{ID: "aa", Title: "AA", Program: `C:\Tools\AA.exe`, Args: []string{"--open", config.FileToken}}}}
+	cfg := config.Config{MenuTitle: "DEV调试", Items: []config.Item{{ID: "aa", Title: "AA", Program: `C:\Tools\AA.exe`, SpecifiedFolder: `C:\Target Dir`}}}
 	file := `C:\Temp\path with spaces\file.txt`
 	program, args, err := BuildInvocation(cfg, "aa", file)
 	if err != nil {
@@ -28,6 +28,18 @@ func TestBuildInvocation(t *testing.T) {
 	}
 	if program != `C:\Tools\AA.exe` {
 		t.Fatalf("program = %q", program)
+	}
+	if want := []string{" ", "IF_A_000N", `C:\Target Dir`, `C:\Temp\path with spaces`, "file.txt", "Q"}; !reflect.DeepEqual(args, want) {
+		t.Fatalf("args = %#v want %#v", args, want)
+	}
+}
+
+func TestBuildInvocationPreservesCustomArgsCompatibility(t *testing.T) {
+	cfg := config.Config{MenuTitle: "DEV调试", Items: []config.Item{{ID: "aa", Title: "AA", Program: `C:\Tools\AA.exe`, Args: []string{"--open", config.FileToken}}}}
+	file := `C:\Temp\path with spaces\file.txt`
+	_, args, err := BuildInvocation(cfg, "aa", file)
+	if err != nil {
+		t.Fatal(err)
 	}
 	if want := []string{"--open", file}; !reflect.DeepEqual(args, want) {
 		t.Fatalf("args = %#v want %#v", args, want)

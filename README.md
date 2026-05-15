@@ -1,6 +1,6 @@
 # RightMenu / DEV调试
 
-`rightmenu.exe` is a small Windows x64 utility that adds a personal `DEV调试` file right-click menu. Menu items are configured in JSON. Choosing a child item launches the configured program and passes the selected file path to it.
+`rightmenu.exe` is a small Windows x64 utility that adds a personal `DEV调试` file right-click menu. Menu items are configured in JSON. Choosing a child item launches the configured program with the configured DEV argument contract for the selected file.
 
 ## First-version scope
 
@@ -57,7 +57,7 @@ Edit `%APPDATA%\RightMenu\config.json`:
       "id": "aa",
       "title": "AA",
       "program": "C:\\Tools\\AA.exe",
-      "args": ["{file}"]
+      "specifiedFolder": "C:\\DEV"
     }
   ]
 }
@@ -68,8 +68,16 @@ Rules:
 - `id` must be unique and match `^[A-Za-z0-9._-]+$`.
 - `title` is shown in the submenu.
 - `program` is the target executable path.
-- `args` is optional; when omitted, it defaults to `["{file}"]`.
-- `{file}` expands to the selected file path.
+- `specifiedFolder` is the per-item folder path passed as argument 3 when using the default DEV argument contract.
+- `args` is an optional advanced override. When `args` is omitted or empty, `specifiedFolder` is required and the target receives exactly six arguments:
+  1. `" "` (single space)
+  2. `"IF_A_000N"`
+  3. `specifiedFolder`
+  4. selected file's containing folder path
+  5. selected file's filename only
+  6. `"Q"`
+- If `args` is present, it replaces the default six-argument contract for compatibility.
+- In custom `args`, `{file}` expands to the selected full file path.
 
 After editing config, run:
 
@@ -140,10 +148,10 @@ reg query "HKCU\Software\Classes\*\shell\DEVDebug" /s
 Expected results:
 
 - The first `reg query` shows `DEV调试`, `MultiSelectModel = Single`, child commands, and `设置`.
-- The `run aa ...` command launches your configured target with the exact file path argument.
+- The `run aa ...` command launches your configured target with the default six DEV arguments, including the selected file's folder and filename.
 - The final `reg query` fails because uninstall removed the owned menu subtree.
 
-For full Explorer verification, right-click a file whose path contains spaces, choose `DEV调试 -> AA`, and confirm the target receives the exact selected path.
+For full Explorer verification, right-click a file whose path contains spaces, choose `DEV调试 -> AA`, and confirm the target receives the exact six arguments. If you configured custom `args`, confirm that override receives the selected path through `{file}` as expected.
 
 ## Development
 

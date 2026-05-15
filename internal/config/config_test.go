@@ -9,7 +9,10 @@ import (
 )
 
 func TestValidateRejectsDuplicateAndInvalidIDs(t *testing.T) {
-	cfg := Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA", Program: "tool.exe"}, {ID: "aa", Title: "BB", Program: "tool.exe"}}}
+	cfg := Config{MenuTitle: "DEV调试", Items: []Item{
+		{ID: "aa", Title: "AA", Program: "tool.exe", SpecifiedFolder: `C:\DEV`},
+		{ID: "aa", Title: "BB", Program: "tool.exe", SpecifiedFolder: `C:\DEV`},
+	}}
 	if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), "duplicate") {
 		t.Fatalf("expected duplicate error, got %v", err)
 	}
@@ -36,7 +39,20 @@ func TestEnsureLoadAndDefaults(t *testing.T) {
 	}
 }
 
-func TestExpandedArgsPreservesSpacesAndUnicode(t *testing.T) {
+func TestExpandedArgsDefaultSixArgumentContract(t *testing.T) {
+	item := Item{ID: "aa", Title: "AA", Program: "tool.exe", SpecifiedFolder: `C:\Target Dir`}
+	file := `C:\Temp\路径 with spaces\sample file.txt`
+	got := item.ExpandedArgs(file)
+	want := []string{" ", "IF_A_000N", `C:\Target Dir`, `C:\Temp\路径 with spaces`, "sample file.txt", "Q"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %#v want %#v", got, want)
+	}
+	if got := item.ArgsWithDefaults(file); !reflect.DeepEqual(got, want) {
+		t.Fatalf("default args = %#v want %#v", got, want)
+	}
+}
+
+func TestExpandedArgsPreservesCustomArgsCompatibility(t *testing.T) {
 	item := Item{ID: "aa", Title: "AA", Program: "tool.exe", Args: []string{"--file", FileToken, "prefix=" + FileToken}}
 	file := `C:\Temp\路径 with spaces\sample file.txt`
 	got := item.ExpandedArgs(file)
@@ -44,8 +60,8 @@ func TestExpandedArgsPreservesSpacesAndUnicode(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v want %#v", got, want)
 	}
-	if got := (Item{}).ArgsWithDefaults(); !reflect.DeepEqual(got, []string{FileToken}) {
-		t.Fatalf("default args = %#v", got)
+	if got := item.ArgsWithDefaults(file); !reflect.DeepEqual(got, []string{"--file", FileToken, "prefix=" + FileToken}) {
+		t.Fatalf("custom args = %#v", got)
 	}
 }
 
@@ -77,8 +93,18 @@ func TestValidateRejectsRequiredFields(t *testing.T) {
 		},
 		{
 			name: "missing item program",
-			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA"}}},
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA", SpecifiedFolder: `C:\DEV`}}},
 			want: "program is required",
+		},
+		{
+			name: "missing specified folder without args override",
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA", Program: "tool.exe"}}},
+			want: "specifiedFolder",
+		},
+		{
+			name: "empty args still requires specified folder",
+			cfg:  Config{MenuTitle: "DEV调试", Items: []Item{{ID: "aa", Title: "AA", Program: "tool.exe", Args: []string{}}}},
+			want: "specifiedFolder",
 		},
 	}
 	for _, tc := range cases {

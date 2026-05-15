@@ -27,10 +27,11 @@ type Config struct {
 
 // Item describes one DEV调试 submenu command.
 type Item struct {
-	ID      string   `json:"id"`
-	Title   string   `json:"title"`
-	Program string   `json:"program"`
-	Args    []string `json:"args,omitempty"`
+	ID              string   `json:"id"`
+	Title           string   `json:"title"`
+	Program         string   `json:"program"`
+	SpecifiedFolder string   `json:"specifiedFolder,omitempty"`
+	Args            []string `json:"args,omitempty"`
 }
 
 // Paths contains canonical v1 filesystem locations.
@@ -89,10 +90,10 @@ func DefaultConfig() Config {
 	return Config{
 		MenuTitle: "DEV调试",
 		Items: []Item{{
-			ID:      "aa",
-			Title:   "AA",
-			Program: `C:\Tools\AA.exe`,
-			Args:    []string{FileToken},
+			ID:              "aa",
+			Title:           "AA",
+			Program:         `C:\Tools\AA.exe`,
+			SpecifiedFolder: `C:\DEV`,
 		}},
 	}
 }
@@ -158,6 +159,9 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(item.Program) == "" {
 			return fmt.Errorf("%s.program is required", idx)
 		}
+		if len(item.Args) == 0 && strings.TrimSpace(item.SpecifiedFolder) == "" {
+			return fmt.Errorf("%s.specifiedFolder is required when args is omitted or empty", idx)
+		}
 	}
 	return nil
 }
@@ -171,9 +175,10 @@ func (c Config) Find(id string) (Item, bool) {
 	return Item{}, false
 }
 
-func (i Item) ArgsWithDefaults() []string {
+func (i Item) ArgsWithDefaults(file string) []string {
 	if len(i.Args) == 0 {
-		return []string{FileToken}
+		dir, name := splitSelectedFile(file)
+		return []string{" ", "IF_A_000N", i.SpecifiedFolder, dir, name, "Q"}
 	}
 	out := make([]string, len(i.Args))
 	copy(out, i.Args)
@@ -181,10 +186,18 @@ func (i Item) ArgsWithDefaults() []string {
 }
 
 func (i Item) ExpandedArgs(file string) []string {
-	args := i.ArgsWithDefaults()
+	args := i.ArgsWithDefaults(file)
 	out := make([]string, len(args))
 	for idx, arg := range args {
 		out[idx] = strings.ReplaceAll(arg, FileToken, file)
 	}
 	return out
+}
+
+func splitSelectedFile(file string) (dir, name string) {
+	idx := strings.LastIndexAny(file, `\/`)
+	if idx < 0 {
+		return "", file
+	}
+	return file[:idx], file[idx+1:]
 }
